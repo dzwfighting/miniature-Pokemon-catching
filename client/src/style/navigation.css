@@ -1,0 +1,20 @@
+.link_margin {
+  margin-top: 20px;
+}
+.btn {
+  width: 270px;
+  height: 45px;
+  font-size: 1.3rem;
+}
+.bg {
+  background-color: rgb(241, 214, 179) !important;
+  width: 1700px;
+}
+.dis {
+  width: 300px;
+  padding-left: 20px !important;
+}
+.hei {
+  padding-top: 20px;
+  padding-bottom: 50px;
+}
