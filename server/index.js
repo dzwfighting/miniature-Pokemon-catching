@@ -5,7 +5,6 @@ const redis = require("redis");
 const axios = require("axios");
 const uuid = require("uuid");
 const bluebird = require("bluebird");
-const { application } = require("express");
 const client = redis.createClient();
 
 //  convert regular API to the API which promise can read
@@ -232,9 +231,11 @@ const resolvers = {
         }
 
         args.pokemonId = parseInt(args.pokemonId);
-        let findPokemon = await client.exists(`${args.pokemonId}`);
-        console.log(findPokemon);
-        if (findPokemon) {
+        let findPokemon = await client
+          .lrangeAsync(`${args.pokemonId}`, 0, -1)
+          .map(JSON.parse);
+        console.log(findPokemon[0]);
+        if (findPokemon[0]) {
           console.log("this id in the redis");
           let cache = await client
             .lrangeAsync(`${args.pokemonId}`, 0, -1)
@@ -246,7 +247,7 @@ const resolvers = {
             `https://pokeapi.co/api/v2/pokemon/${args.pokemonId}`
           );
           data = data.data;
-          console.log(data);
+          // console.log(data);
           if (data.length === 0) {
             throw Error("The pokemon we cannot find, please try again");
           }
@@ -261,7 +262,7 @@ const resolvers = {
             front_shiny: data.sprites.front_shiny,
           };
 
-          console.log(`data.abilities.length: ${data.abilities.length}`);
+          // console.log(`data.abilities.length: ${data.abilities.length}`);
           for (let abi = 0; abi < data.abilities.length; abi += 1) {
             if (data.abilities[abi].ability) {
               abilityList.push(
@@ -274,7 +275,7 @@ const resolvers = {
             }
           }
 
-          console.log(`data.moves.length${data.moves.length}`);
+          // console.log(`data.moves.length${data.moves.length}`);
           for (let mov = 0; mov < data.moves.length; mov += 1) {
             moveList.push(
               data.moves[mov].move.name ? data.moves[mov].move.name : "N/A"
@@ -331,6 +332,15 @@ const resolvers = {
         let trainers = await client
           .lrangeAsync("trainers", 0, -1)
           .map(JSON.parse);
+        let idx = 0;
+        while (idx < trainers.length) {
+          if (trainers[idx] === 0) {
+            trainers.splice(idx, 1);
+            idx -= 1;
+          }
+          idx++;
+        }
+        console.log(JSON.stringify(trainers));
         return trainers;
       } catch (error) {
         console.log(error.message);
@@ -377,7 +387,8 @@ const resolvers = {
         }
 
         console.log(args.trainerId);
-        let trainer = JSON.parse(await client.getAsync(args.trainerId));
+        const trainer = JSON.parse(await client.getAsync(args.trainerId));
+
         // console.log(`update cache:${JSON.stringify(trainer)}`);
         if (!trainer) {
           throw Error("this trainer is not exist, please try again");
@@ -388,17 +399,33 @@ const resolvers = {
           );
         }
 
-        let pokemon = await client
+        let checkPokemon = await client
           .lrangeAsync(args.pokemonId, 0, -1)
           .map(JSON.parse);
-        if (!pokemon) {
-          console.log(`this pokemon already in redis`);
+
+        console.log(
+          `check pokemon if in redis pokemon[0] !== undefined: ${checkPokemon[0]}`
+        );
+        if (checkPokemon[0]) {
+          console.log(
+            `this pokemon already in redis: ${JSON.stringify(checkPokemon[0])}`
+          );
           let pokemon = await client
             .lrangeAsync(args.pokemonId, 0, -1)
             .map(JSON.parse);
 
           pokemon = pokemon[0];
+
+          if (pokemon.trainer) {
+            throw Error(
+              "this pokemon already has a trainer, you cannot add another"
+            );
+          }
           // console.log(`this pokemon exist: ${JSON.stringify(pokemon)}`);
+
+          // console.log(
+          //   `trainer.name: ${trainer.name} type: ${typeof trainer.name}`
+          // );
 
           const newPokemon = {
             pokemonId: pokemon.pokemonId,
@@ -415,17 +442,21 @@ const resolvers = {
             `${args.pokemonId}`,
             JSON.stringify(newPokemon)
           );
-          console.log(`update this pokemon: ${JSON.stringify(newPokemon)}`);
+          // console.log(`update this pokemon: ${JSON.stringify(newPokemon)}`);
           // console.log(trainer.pokemons instanceof Array);
 
           // console.log(Array.isArray(trainer.pokemons));
           // console.log(trainer["pokemons"].length);
           // console.log(`trainer.pokemons: ${trainer["pokemons"]}`);
-          trainer["pokemons"].push(newPokemon);
-          console.log(JSON.stringify(trainer));
-          // temp = trainer["pokemons"].push(pokemon);
-          // console.log(temp);
-          let newTrainer = trainer;
+          let newTrainer = JSON.parse(await client.getAsync(args.trainerId));
+          newTrainer.pokemons.push(newPokemon);
+          // newTrainer.pokemons.push(newPokemon);
+
+          // console.log(
+          //   `The trainer is(check if the trainer is changed): ${JSON.stringify(
+          //     trainer
+          //   )}`
+          // );
           console.log(`newTrainer: ${JSON.stringify(newTrainer)}`);
 
           await client.delAsync(args.trainerId);
@@ -481,21 +512,28 @@ const resolvers = {
             sprites: spritList,
             trainer: trainer.name,
           };
-          await client.lpushAsync(`${args.pokemonId}`, JSON.stringify(pokemon));
 
-          trainer["pokemons"].push(pokemon);
-          const newTrainer = trainer;
-
-          await client.delAsync(args.trainerId);
-          await client.lremAsync("trainers", 0, JSON.stringify(trainer));
-          await client.lpushAsync("trainers", JSON.stringify(newTrainer));
-          await client.setAsync(args.trainerId, JSON.stringify(newTrainer));
-
+          let newTrainer = JSON.parse(await client.getAsync(args.trainerId));
+          newTrainer.pokemons.push(pokemon);
+          // console.log(
+          //   `after push the pokemon, check if the pokemon has been changed: ${trainer}`
+          // );
           console.log(
             `pokemon not in redis, and the new trainer is: ${JSON.stringify(
               newTrainer
             )}`
           );
+
+          await client.delAsync(args.trainerId);
+          await client.setAsync(args.trainerId, JSON.stringify(newTrainer));
+          await client.lremAsync("trainers", 0, JSON.stringify(trainer));
+          await client.lpushAsync("trainers", JSON.stringify(newTrainer));
+
+          await client.lpushAsync(`${args.pokemonId}`, JSON.stringify(pokemon));
+          console.log(
+            `this pokemon not in redis, now we add: ${JSON.stringify(pokemon)}`
+          );
+
           return newTrainer;
         }
       } catch (error) {
@@ -504,31 +542,59 @@ const resolvers = {
       }
     },
 
-    deleteTrainer: async (_, args) => {
+    deletePokemon: async (_, args) => {
       try {
+        if (!args.pokemonId) {
+          throw Error("please input a pokemonId to delete");
+        }
         if (!args.trainerId) {
-          throw Error("We can not find id, please try again");
+          throw Error("Please throw a trainerId");
         }
 
-        const trainer = JSON.parse(await client.getAsync(args.trainerId));
-        console.log(`update cache:${cache}`);
+        let trainer = JSON.parse(await client.getAsync(args.trainerId));
 
         if (!trainer) {
-          throw Error("this trainer is not exist, please try again");
+          throw Error("we cannot find this trainer, please try again");
         }
+        let newTrainer = JSON.parse(await client.getAsync(args.trainerId));
+        let pokemon = await client
+          .lrangeAsync(args.pokemonId, 0, -1)
+          .map(JSON.parse);
+        pokemon = pokemon[0];
 
-        const delPokemon = JSON.parse(await client.getAsync(args.pokemonId));
+        if (newTrainer.pokemons === undefined) {
+          throw Error("this trainer already has not any pokemon");
+        }
+        console.log(
+          `delete the pokemon in newTrainer: ${JSON.stringify(
+            newTrainer.pokemons
+          )}`
+        );
+        // console.log(
+        //   `find the pokemon you want to delete: ${JSON.stringify(pokemon)}`
+        // );
 
-        for (let po = 0; po < trainer.pokemons.length; po += 1) {
-          if (trainer.pokemons[po].pokemonId === delPokemon.pokemonId) {
-            arr.splice(po, 1);
+        for (let idx = 0; idx < newTrainer.pokemons.length; idx++) {
+          console.log(`newTrainer.pokemons[idx]: ${newTrainer.pokemons[idx]}`);
+          if (newTrainer.pokemons[idx].pokemonId === args.pokemonId) {
+            newTrainer.pokemons.splice(idx, 1);
+            break;
           }
         }
 
-        console.log(`del a pokemon ${trainer}`);
-        await client.setAsync(args.trainerId, JSON.stringify(trainer));
+        pokemon.trainer = "";
 
-        return trainer;
+        console.log(`delete the trainer in pokemon: ${newTrainer.pokemons}`);
+
+        await client.delAsync(args.trainerId);
+        await client.setAsync(args.trainerId, JSON.stringify(newTrainer));
+        await client.lremAsync("trainers", 0, JSON.stringify(trainer));
+        await client.lpushAsync("trainers", JSON.stringify(newTrainer));
+
+        await client.delAsync(`${args.pokemonId}`);
+        await client.lpushAsync(`${args.pokemonId}`, JSON.stringify(pokemon));
+
+        return newTrainer;
       } catch (error) {
         console.log(error.message);
         throw Error(error.message);
@@ -542,10 +608,31 @@ const resolvers = {
         }
         // JSON.parse: convert json to string
         const trainer = JSON.parse(await client.getAsync(args.trainerId));
+        if (!trainer) {
+          throw Error("we cannot find this trainer, please try again");
+        }
         console.log(`del trainer ${trainer}`);
 
-        await client.lremAsynv("trainers", 0, JSON.stringify(trainer));
+        for (let idx = 0; idx < trainer.pokemons.length; idx++) {
+          let delPokemon = trainer.pokemons[idx].pokemonId;
+
+          let pokemon = await client
+            .lrangeAsync(delPokemon, 0, -1)
+            .map(JSON.parse);
+
+          pokemon = pokemon[0];
+          if (!pokemon) continue;
+
+          pokemon.trainer = "";
+
+          console.log(`delPokemon: ${delPokemon}`);
+          await client.delAsync(`${delPokemon}`);
+          await client.lpushAsync(`${delPokemon}`, JSON.stringify(pokemon));
+        }
+
+        await client.lremAsync("trainers", 0, JSON.stringify(trainer));
         await client.delAsync(args.trainerId);
+        console.log("delete successful");
         return trainer;
       } catch (error) {
         console.log(error.message);
