@@ -1,5 +1,8 @@
 .pDis {
-  padding-top: 30px;
+  padding-top: 40px;
+}
+.cDis {
+  padding-top: 20px;
 }
 .pBot {
   padding-bottom: 50px;
@@ -29,4 +32,7 @@ p {
 span {
   color: rgb(58, 61, 64);
   font-weight: bold;
+}
+.caba {
+  background-color: rgb(245, 229, 206);
 }
