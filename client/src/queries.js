@@ -8,21 +8,33 @@ const POKEMONS = gql`
       abilities
       moves
       species
-      sprites
+      sprites {
+        official
+        back
+        front
+        back_shiny
+        front_shiny
+      }
       trainer
     }
   }
 `;
 
 const POKEMON = gql`
-  query GetPokemonById($pokemonId: ID!) {
-    getPokemonById(pokemonId: $pokemonId) {
+  query GetPokemon($pokemonId: ID!) {
+    getPokemon(pokemonId: $pokemonId) {
       pokemonId
       name
       abilities
       moves
       species
-      sprites
+      sprites {
+        official
+        back
+        front
+        back_shiny
+        front_shiny
+      }
       trainer
     }
   }
@@ -39,7 +51,13 @@ const TRAINERS = gql`
         abilities
         moves
         species
-        sprites
+        sprites {
+          official
+          back
+          front
+          back_shiny
+          front_shiny
+        }
         trainer
       }
     }
@@ -47,8 +65,8 @@ const TRAINERS = gql`
 `;
 
 const TRAINER = gql`
-  query GetTrainerById($trainerId: ID!) {
-    getTrainerById(trainerId: $trainerId) {
+  query GetTrainer($trainerId: ID!) {
+    getTrainer(trainerId: $trainerId) {
       trainerId
       name
       pokemons {
@@ -57,7 +75,13 @@ const TRAINER = gql`
         abilities
         moves
         species
-        sprites
+        sprites {
+          official
+          back
+          front
+          back_shiny
+          front_shiny
+        }
         trainer
       }
     }
@@ -67,7 +91,23 @@ const TRAINER = gql`
 const UPLOAD_TRAINER = gql`
   mutation UploadTrainer($name: String!) {
     uploadTrainer(name: $name) {
+      trainerId
       name
+      pokemons {
+        pokemonId
+        name
+        abilities
+        moves
+        species
+        sprites {
+          official
+          back
+          front
+          back_shiny
+          front_shiny
+        }
+        trainer
+      }
     }
   }
 `;
@@ -83,7 +123,13 @@ const ADDPOKEMON = gql`
         abilities
         moves
         species
-        sprites
+        sprites {
+          official
+          back
+          front
+          back_shiny
+          front_shiny
+        }
         trainer
       }
     }
@@ -91,8 +137,8 @@ const ADDPOKEMON = gql`
 `;
 
 const DELPOKEMON = gql`
-  mutation DelPokemon($pokemonId: ID!, $trainerId: ID!){
-    delPokemon($pokemonId: ID!, $trainerId: ID!){
+  mutation DeletePokemon($pokemonId: ID!, $trainerId: ID!) {
+    deletePokemon(pokemonId: $pokemonId, trainerId: $trainerId) {
       trainerId
       name
       pokemons {
@@ -101,7 +147,13 @@ const DELPOKEMON = gql`
         abilities
         moves
         species
-        sprites
+        sprites {
+          official
+          back
+          front
+          back_shiny
+          front_shiny
+        }
         trainer
       }
     }
@@ -112,6 +164,22 @@ const DELETE_TRAINER = gql`
   mutation deleteTrainer($trainerId: ID!) {
     deletetrainer(trainerId: $trainerId) {
       trainerId
+      name
+      pokemons {
+        pokemonId
+        name
+        abilities
+        moves
+        species
+        sprites {
+          official
+          back
+          front
+          back_shiny
+          front_shiny
+        }
+        trainer
+      }
     }
   }
 `;

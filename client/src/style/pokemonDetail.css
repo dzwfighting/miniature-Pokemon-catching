@@ -1,0 +1,21 @@
+.fontC {
+  color: rgb(83, 88, 93) !important;
+  font-weight: normal !important;
+  font-family: cursive;
+  line-height: 1.2px;
+  font-size: 1rem !important;
+}
+.fontC ::after {
+  content: "      ";
+}
+.PadDis {
+  padding-top: 20px;
+  padding-bottom: 20px !important;
+}
+.styC {
+  font-size: 1.1rem !important;
+  font-weight: bold !important;
+}
+.cardF {
+  font-size: 1.2rem !important;
+}

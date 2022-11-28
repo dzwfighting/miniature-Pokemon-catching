@@ -56,14 +56,6 @@ const typeDefs = gql`
     trainer: String
   }
 
-  type ability {
-    name: [String]
-  }
-
-  type move {
-    name: [String]
-  }
-
   type sprit {
     official: String!
     back: String!
@@ -168,11 +160,24 @@ const resolvers = {
 
           // console.log(`sprites: ${pokemonDetail["sprites"]}`);
           const spritList = {
-            official: pokemonDetail.sprites.other.dream_world.front_default,
-            back: pokemonDetail.sprites.back_default,
-            front: pokemonDetail.sprites.front_default,
-            back_shiny: pokemonDetail.sprites.back_shiny,
-            front_shiny: pokemonDetail.sprites.front_shiny,
+            official: pokemonDetail.sprites.other["official-artwork"]
+              .front_default
+              ? pokemonDetail.sprites.other["official-artwork"].front_default
+              : pokemonDetail.sprites.other.home.front_default
+              ? pokemonDetail.sprites.other.home.front_default
+              : "",
+            back: pokemonDetail.sprites.back_default
+              ? pokemonDetail.sprites.back_default
+              : "",
+            front: pokemonDetail.sprites.front_default
+              ? pokemonDetail.sprites.front_default
+              : "",
+            back_shiny: pokemonDetail.sprites.back_shiny
+              ? pokemonDetail.sprites.back_shiny
+              : "",
+            front_shiny: pokemonDetail.sprites.front_shiny
+              ? pokemonDetail.sprites.front_shiny
+              : "",
           };
 
           let trainers = await client
@@ -261,11 +266,17 @@ const resolvers = {
           let abilityList = [];
           let moveList = [];
           let spritList = {
-            official: data.sprites.other.dream_world.front_default,
-            back: data.sprites.back_default,
-            front: data.sprites.front_default,
-            back_shiny: data.sprites.back_shiny,
-            front_shiny: data.sprites.front_shiny,
+            official: data.sprites.other["official-artwork"].front_default
+              ? data.sprites.other["official-artwork"].front_default
+              : data.sprites.other.dream_world.home.front_default
+              ? data.sprites.other.dream_world.home.front_default
+              : "",
+            back: data.sprites.back_default ? data.sprites.back_default : "",
+            front: data.sprites.front_default ? data.sprites.front_default : "",
+            back_shiny: data.sprites.back_shiny ? data.sprites.back_shiny : "",
+            front_shiny: data.sprites.front_shiny
+              ? data.sprites.front_shiny
+              : "",
           };
 
           // console.log(`data.abilities.length: ${data.abilities.length}`);

@@ -23,9 +23,9 @@ const Navigation = () => {
               <Nav.Link href="/trainers" className="dis">
                 All Trainer
               </Nav.Link>
-              <Nav.Link href="/addtrainer" className="dis">
+              {/* <Nav.Link href="/addtrainer" className="dis">
                 Add Trainer
-              </Nav.Link>
+              </Nav.Link> */}
             </Nav>
           </Navbar.Collapse>
         </Container>
