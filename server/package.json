@@ -10,10 +10,8 @@
   "author": "Yiwen Wang",
   "license": "ISC",
   "dependencies": {
-    "@apollo/server": "^4.2.1",
     "apollo-server": "^3.11.1",
-    "apollo-server-express": "^3.11.1",
-    "axios": "^1.1.3",
+    "axios": "^0.23.0",
     "bluebird": "^3.7.2",
     "cors": "^2.8.5",
     "express": "^4.18.2",

@@ -95,6 +95,7 @@ const resolvers = {
         const { data } = await axios.get(
           `https://pokeapi.co/api/v2/pokemon/?limit=20&offset=${offset}`
         );
+        console.log(`data: ${data}`);
 
         if (data.results && data.results.length === 0) {
           throw Error("This page is not exist, please try again");
@@ -196,29 +197,37 @@ const resolvers = {
             trainer: "",
           };
 
-          let temp = "";
-          for (let t in trainers) {
-            for (let p in t.pokemons) {
-              if (p.pokemonId === pokemon.pokemonId) {
-                temp = t.name;
-                break;
-              }
-            }
-            if (temp) {
-              break;
-            }
-          }
-          if (temp) {
-            pokemon[trainer] = temp;
-          }
+          // let temp = "";
+          // for (let t in trainers) {
+          //   for (let p in t.pokemons) {
+          //     if (p.pokemonId === pokemon.pokemonId) {
+          //       temp = t.name;
+          //       break;
+          //     }
+          //   }
+          //   if (temp) {
+          //     break;
+          //   }
+          // }
+          // if (temp) {
+          //   pokemon[trainer] = temp;
+          // }
 
-          await client.lpushAsync(
-            `${pokemon.pokemonId}`,
-            JSON.stringify(pokemon)
-          );
+          let findPokemon = await client
+            .lrangeAsync(`${pokemon.pokemonId}`, 0, -1)
+            .map(JSON.parse);
+          // console.log(findPokemon[0]);
+          if (!findPokemon[0]) {
+            await client.lpushAsync(
+              `${pokemon.pokemonId}`,
+              JSON.stringify(pokemon)
+            );
+          }
+          // console.log("push");
+          pokemonList.push(pokemon);
           // console.log(pokemon.pokemonId);
           // await client.lpushAsync(`${offset}`, JSON.stringify(pokemon));
-          pokemonList.push(pokemon);
+
           // return pokemon;
         }
 
@@ -227,7 +236,7 @@ const resolvers = {
         //   .map(JSON.parse);
         // console.log(allPokemonData);
         // return JSON.parse(await client.lrangeAsync(`${offset}`, 0, 19));
-        // console.log(pokemonList);
+        console.log(`pokemonList: ${pokemonList}`);
         return pokemonList;
       } catch (error) {
         console.log(error.message);
