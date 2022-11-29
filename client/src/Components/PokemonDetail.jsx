@@ -59,6 +59,7 @@ const useStyles = makeStyles({
 const PokemonDetail = (props) => {
   const classes = useStyles();
   const [Trainer] = useContext(context);
+
   let pokemonId = parseInt(useParams().id);
   console.log(pokemonId);
   let card = null;
@@ -165,15 +166,6 @@ const PokemonDetail = (props) => {
                 <Typography className="styC"> Moves: </Typography>
                 {moveCard && moveCard}
               </Typography>
-
-              <Typography
-                variant="body2"
-                color="textSecondary"
-                component="a"
-                className="cardF"
-              >
-                {data.trainer ? `Trainer: ${data.trainer}` : "Trainer: No"}
-              </Typography>
             </CardContent>
           </CardActionArea>
         </Card>
@@ -242,9 +234,11 @@ const PokemonDetail = (props) => {
     }
   } else {
     if (error) {
+      console.log("error:");
+      console.log(error);
       return (
         <div>
-          <Error errorCode={error.message} />
+          <Error />
         </div>
       );
     }
@@ -261,32 +255,48 @@ const PokemonDetail = (props) => {
             Trainer.pokemons.indexOf(parseInt(data.getPokemon.pokemonId)) ===
               -1 &&
             Trainer.pokemons.length < 6 && (
-              <Button
-                onClick={(event) => {
-                  event.preventDefault();
-                  addToTrainer(data);
-                }}
-              >
-                Add to Train
-              </Button>
+              <div className="PadDis">
+                <Button
+                  className="buttonD "
+                  onClick={(event) => {
+                    event.preventDefault();
+                    addToTrainer(data);
+                  }}
+                >
+                  Add to Train
+                </Button>
+              </div>
             )}
           {Trainer &&
             data &&
             Trainer.pokemons.indexOf(parseInt(data.getPokemon.pokemonId)) !==
               -1 &&
             Trainer.pokemons.length > 0 && (
-              <Button
-                onClick={(event) => {
-                  event.preventDefault();
-                  release(data);
-                }}
-              >
-                Release
-              </Button>
+              <div className="PadDis">
+                <Button
+                  className="buttonD PadDis"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    release(data);
+                  }}
+                >
+                  Release
+                </Button>
+              </div>
             )}
-          {!Trainer && <Button disable>No Trainer Selected</Button>}
+          {!Trainer && (
+            <div className="PadDis">
+              <Button disable className="buttonD PadDis">
+                No Trainer Selected
+              </Button>
+            </div>
+          )}
           {Trainer && Trainer.pokemons.length >= 6 && (
-            <Button disable>Trainer Full</Button>
+            <div className="PadDis">
+              <Button disable className="buttonD PadDis">
+                Trainer Full
+              </Button>
+            </div>
           )}
         </div>
       );

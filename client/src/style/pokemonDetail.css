@@ -19,3 +19,13 @@
 .cardF {
   font-size: 1.2rem !important;
 }
+
+.buttonD {
+  -webkit-transition-duration: 0.4s !important;
+  transition-duration: 0.4s !important;
+}
+
+.buttonD:hover {
+  background-color: #ddbf6b !important;
+  color: rgb(210, 122, 122) !important;
+}

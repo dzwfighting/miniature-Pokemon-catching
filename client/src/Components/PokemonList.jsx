@@ -5,11 +5,13 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@apollo/client";
 import queries from "../queries";
 import actions from "../actions";
+import axios from "axios";
 
 import noImage from "../img/download.jpeg";
 import Error from "./Error";
 
 import "bootstrap/dist/css/bootstrap.min.css";
+import "../style/pokemonDetail.css";
 import {
   Card,
   CardActionArea,
@@ -22,6 +24,7 @@ import {
 } from "@material-ui/core";
 import context from "../context";
 import { useDispatch } from "react-redux";
+import Search from "./Search";
 
 const useStyles = makeStyles({
   card: {
@@ -54,6 +57,10 @@ const useStyles = makeStyles({
 
 const PokemonList = () => {
   const classes = useStyles();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchData, setSearchData] = useState(undefined);
+  const [searchEmpty, setSearchEmpty] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [showPrevious, setShowPrevious] = useState(false);
   const [showNext, setShowNext] = useState(true);
   const temp = useParams();
@@ -81,6 +88,10 @@ const PokemonList = () => {
   //   setPageNum(pageNum + 1);
   // };
 
+  const searchValue = async (value) => {
+    setSearchTerm(value);
+  };
+
   const {
     loading: allPokemonLoading,
     error: allPokemonError,
@@ -104,15 +115,27 @@ const PokemonList = () => {
 
   const dispatch = useDispatch();
 
+  // Add pokemon for current trainer
   const addToTrainer = (pokemon) => {
     console.log(`in addToTrainer: ${pokemon}`);
-    dispatch(actions.addPokemon(Trainer.id, pokemon.pokemonId));
+    if (pokemon.pokemonId) {
+      dispatch(actions.addPokemon(Trainer.id, pokemon.pokemonId));
+    } else {
+      console.log("in search, addpokemon");
+      dispatch(actions.addPokemon(Trainer.id, pokemon.data.id));
+    }
   };
 
+  // Delete pokemon for current trainer
   const release = (pokemon) => {
     // console.log(`in release: ${JSON.stringify(pokemon)}`);
-    console.log(`in release: ${pokemon.pokemonId}`);
-    dispatch(actions.deletePokemon(Trainer.id, pokemon.pokemonId));
+    if (pokemon.pokemonId) {
+      console.log(`in release: ${pokemon.pokemonId}`);
+      dispatch(actions.deletePokemon(Trainer.id, pokemon.pokemonId));
+    } else {
+      console.log(`in search release: ${pokemon}`);
+      dispatch(actions.deletePokemon(Trainer.id, pokemon.data.id));
+    }
   };
 
   async function next() {
@@ -152,6 +175,31 @@ const PokemonList = () => {
     reRender();
   }, [pageNum, checkNext]);
 
+  // did not use backend, to finish search function
+  useEffect(() => {
+    console.log("for searchData");
+    async function fetchData() {
+      try {
+        console.log(`searchTerm in fetch: ${searchTerm}`);
+        setSearchEmpty(false);
+        const getSearchData = await axios.get(
+          `https://pokeapi.co/api/v2/pokemon/${searchTerm}`
+        );
+        console.log(`https://pokeapi.co/api/v2/pokemon/${searchTerm}`);
+        console.log(`fetch success: getSearchData: ${getSearchData}`);
+        setSearchData([getSearchData]);
+        // console.log(`add this search data: ${getSearchData}`);
+        setLoading(false);
+      } catch (e) {
+        setSearchEmpty(true);
+        console.log(e);
+      }
+    }
+    if (searchTerm) {
+      fetchData();
+    }
+  }, [searchTerm]);
+
   const buildCard = (data) => {
     return (
       <Grid item xs={12} sm={6} md={4} lg={3} xl={2} key={data.pokemonId}>
@@ -182,9 +230,6 @@ const PokemonList = () => {
                   {data.species
                     ? `Species: ${data.species}`
                     : "Species: Anonymous"}
-                </Typography>
-                <Typography variant="body2" color="textSecondary" component="p">
-                  {data.trainer ? `Trainer: ${data.trainer}` : "Trainer: No"}
                 </Typography>
               </CardContent>
             </Link>
@@ -224,16 +269,113 @@ const PokemonList = () => {
     );
   };
 
-  card =
-    allPokemonData &&
-    allPokemonData.allPokemon.map((pokemon) => {
-      return buildCard(pokemon);
-    });
+  const searchCard = (data) => {
+    return (
+      <Grid item xs={12} sm={6} md={4} lg={3} xl={2} key={data.data.id}>
+        <Card className={classes.card} variant="outlined">
+          <CardActionArea>
+            <CardMedia
+              className={classes.media}
+              component="img"
+              image={
+                data.data.sprites &&
+                data.data.sprites.other["official-artwork"].front_default
+                  ? data.data.sprites.other["official-artwork"].front_default
+                  : noImage
+              }
+              title="pokemon image"
+            />
+
+            <CardContent>
+              <Typography
+                className={classes.titleHead}
+                gutterBottom
+                variant="h6"
+                component="h3"
+              >
+                {data.data.name}
+              </Typography>
+              <Typography variant="body2" color="textSecondary" component="p">
+                {data.data.species.name
+                  ? `Species: ${data.data.species.name}`
+                  : "Species: Anonymous"}
+              </Typography>
+            </CardContent>
+          </CardActionArea>
+          {Trainer &&
+            data &&
+            Trainer.pokemons.indexOf(parseInt(data.data.id)) === -1 &&
+            Trainer.pokemons.length < 6 && (
+              <div className="PadDis">
+                <Button
+                  className="buttonD PadDis"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    addToTrainer(data);
+                  }}
+                >
+                  Add to Train
+                </Button>
+              </div>
+            )}
+          {Trainer &&
+            data &&
+            Trainer.pokemons.indexOf(parseInt(data.data.id)) !== -1 &&
+            Trainer.pokemons.length > 0 && (
+              <div className="PadDis">
+                <Button
+                  className="buttonD PadDis"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    release(data);
+                  }}
+                >
+                  Release
+                </Button>
+              </div>
+            )}
+          {!Trainer && (
+            <div className="PadDis">
+              <Button disable className="buttonD">
+                No Trainer Selected
+              </Button>
+            </div>
+          )}
+          {Trainer && Trainer.pokemons.length >= 6 && (
+            <div className="PadDis">
+              <Button disable className="buttonD ">
+                Trainer Full
+              </Button>
+            </div>
+          )}
+        </Card>
+      </Grid>
+    );
+  };
+
+  if (searchTerm) {
+    console.log(`searchTerm exist: ${searchTerm}`);
+
+    // console.log(`searchdata are: : ${searchData}`);
+
+    console.log(searchData);
+    card =
+      searchData &&
+      searchData.map((data) => {
+        return searchCard(data);
+      });
+  } else if (allPokemonData) {
+    card =
+      allPokemonData &&
+      allPokemonData.allPokemon.map((pokemon) => {
+        return buildCard(pokemon);
+      });
+  }
 
   if (allPokemonError) {
     return (
       <div>
-        <Error errorCode={allPokemonError.message} />
+        <Error />
       </div>
     );
   }
@@ -242,6 +384,7 @@ const PokemonList = () => {
   } else {
     return (
       <div>
+        <Search searchValue={searchValue}></Search>
         <div>
           {showPrevious ? <Button onClick={prev}>Previous</Button> : <p></p>}
         </div>

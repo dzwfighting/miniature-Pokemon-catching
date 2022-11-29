@@ -4,6 +4,9 @@ import { useState } from "react";
 import { useDispatch } from "react-redux";
 import actions from "../actions";
 
+import "../style/trainer.css";
+import "../style/pokemonList.css";
+
 const TrainerPost = () => {
   const dispatch = useDispatch();
   const [name, setName] = useState("");
@@ -20,7 +23,7 @@ const TrainerPost = () => {
     <div>
       <div>
         <label>
-          Add a Trainer:
+          <span className="space">Add a Trainer:</span>
           <input
             onChange={(e) => handleChange(e)}
             id="name"
@@ -30,7 +33,11 @@ const TrainerPost = () => {
           />
         </label>
       </div>
-      <Button onClick={post}>Add</Button>
+      <div className="btnC">
+        <Button onClick={post} className="btnMo">
+          <p className="fontC">Add</p>
+        </Button>
+      </div>
     </div>
   );
 };
